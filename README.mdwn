@@ -1,0 +1,175 @@
+
+DHCP Tester
+===========
+
+This tool is written to analyze, check, and test DHCP services in IP
+networks.
+
+Installation
+------------
+
+This program depends on some libraries to work:
+
+*   libtrace - to capture datagrams from the network and write dumps of
+    captured data into files for further analysis. This library is
+    available on many modern systems. The homepage of libtrace is:
+    <http://research.wand.net.nz/software/libtrace.php>
+
+*   libuci - to configure the program. If your system is not OpenWrt,
+    you probably have to compile this library yourself. To do that you
+    need libubox (see below). To install libuci do the following:
+
+        git clone git://nbd.name/uci.git
+        cd uci
+        cmake -D BUILD_LUA:BOOL=OFF .
+        make
+        sudo make install
+        sudo ldconfig -v /usr/local/lib
+
+*   libubox - is needed to compile libuci. To install it, do the
+    following:
+
+        git clone git://nbd.name/luci2/libubox.git libubox
+        cd libubox
+        mkdir build
+        cd build
+        cmake ..
+        make ubox
+        sudo mkdir /usr/local/include/libubox
+        sudo cp ../*.h /usr/local/include/libubox
+        sudo cp libubox.so /usr/local/lib
+        sudo ldconfig -v /usr/local/lib
+
+If you cloned dhcptester from the source repository, you have to rebuild
+the script `configure` by running:
+
+    autoreconf -i
+
+To compile dhcptester, just type:
+
+    ./configure
+    make
+
+Alternatively you can create a subdirectory for the build process and
+compile it there:
+
+    mkdir build
+    cd build
+    ../configure
+    make
+
+To install the program, type as root:
+
+    make install
+
+To use the program you will need the capability CAP_NET_RAW. Therefore
+you need to run the following command after installation as root:
+
+    setcap cap_net_raw=ep src/dhcptester
+
+Alternatively you can run the program itself as root, but I would not
+recommend this.
+
+UCI-Configuration
+-----------------
+
+Since dhcptester is linked with libuci, it can be configured with UCI.
+The program looks for its configuration in /etc/config/dhcptester. A
+typical configuration file might look like:
+
+    config capture
+        option inputuri  'int:eth0'
+        option outputuri 'pcapfile:/tmp/dhcp.pcap'
+        option bytes     10000
+        option maxfiles  5
+
+Goals and non-goals
+-------------------
+
+*   This tool will work with IPv4 and IPv6.
+
+*   It will allow to discover and query available DHCP services within a
+    network.
+
+*   It will allow to passively monitor DHCP traffic and generate
+    statistics.
+
+*   The tool will be able to record the DHCP traffic for further manual
+    investigation.
+
+*   It will export its findings in different output formats, as for
+    instance text documents or HTML pages.
+
+*   The tool will help answer these questions:
+
+    *   Which DHCP servers answer requests?
+
+    *   How fast are the different servers responding?
+
+    *   What information do the servers deliver?
+
+    *   What queries are the DHCP clients sending?
+
+*   The tool is developed on Linux. Cross platform availability is not
+    actively pursued but not dismissed.
+
+Road map
+--------
+
+### Version 1: Passive logging
+
+This version will only observe the network traffic relating to DHCP.
+In practice it will:
+
+*   Log IPv4, IPv6, ARP, and ICMPv6 traffic related to DHCP.
+
+*   Record the packet data for manual inspection.
+
+*   Identify associated packets and store the information therein
+    internally.
+
+*   Present its findings as text or as html page.
+
+### Version 2: Discover DHCP servers
+
+This version will - additionally to version 1 - try to discover DHCP
+servers in a network.
+It will:
+
+*   Send DHCPREQUEST messages.
+
+*   Amend the internally stored information with timing and other
+    information.
+
+*   Amend the presentation to reflect the additional information.
+
+*   Allow rudimentary scripting to control the sending oft DHCP
+    messages.
+
+### Version 3: Selective query DHCP servers
+
+This version will be able to exhaustive query DHCP servers for all
+possible parameters.
+It will:
+
+*   Amend the repertoire of DHCP queries.
+
+*   Amend the internally stored information and presentation.
+
+*   Amend the scripting capabilities.
+
+### Version 4: Monitor traffic and generate alerts
+
+This version will be able to permanent monitor DHCP traffic and generate
+alerts on certain events.
+It will:
+
+*   Be able to run permanently.
+
+*   Amends the scripting capabilities.
+
+*   Add some logic to assess the DHCP traffic.
+
+*   Add some means to generate alerts, for instance using Syslog
+    messages, email, SNMP traps.
+
